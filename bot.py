@@ -55,6 +55,8 @@ class WordPadBot(TwitterBot):
         # probability of replying to a matching timeline tweet
         self.config['timeline_reply_probability'] = 0.2
 
+        self.config['rotate_probability'] = float(os.environ.get('ROTATE_PROBABILITY') or '0.5')
+
         self.config['silent_mode'] = (int(os.environ.get('SILENT_MODE') or '1') != 0)
 
     def on_scheduled_tweet(self):
@@ -148,7 +150,11 @@ class WordPadBot(TwitterBot):
 
 
 def generate_image(original):
-    return wordpad(original, max_size=(1024, 1024))
+    return wordpad(
+        original,
+        max_size=(1024, 1024),
+        rotate=(random.random() <= self.config['rotate_probability']),
+    )
 
 
 def has_image(tweet):
