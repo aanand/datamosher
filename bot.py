@@ -12,6 +12,7 @@ import random
 import os
 import logging
 import urllib
+from io import BytesIO
 
 
 class WordPadBot(TwitterBot):
@@ -95,7 +96,12 @@ class WordPadBot(TwitterBot):
 
     def reply_to_tweet(self, tweet, prefix):
         blob = generate_image(get_image_blob(tweet))
-        self.post_tweet(prefix, reply_to=tweet, media='not-actually-a-file.jpeg', file=blob)
+        self.post_tweet(
+            prefix,
+            reply_to=tweet,
+            media='not-actually-a-file.jpeg',
+            file=BytesIO(blob),
+        )
         self.update_reply_threshold(tweet, prefix)
 
     def _is_silent(self):
