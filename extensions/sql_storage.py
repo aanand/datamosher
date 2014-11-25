@@ -1,13 +1,28 @@
 from sqlalchemy import create_engine, Table, Column, String, LargeBinary, MetaData
 from sqlalchemy.sql import select
+from sqlalchemy.exc import OperationalError
 
 from io import BytesIO
+import time
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 class SQLStorage(object):
     def __init__(self, url):
         engine = create_engine(url)
-        self.conn = engine.connect()
+
+        logger.info("Connecting to database...")
+        while True:
+            try:
+                self.conn = engine.connect()
+                break
+            except OperationalError as e:
+                logger.info("%s", e)
+                time.sleep(1)
+                logger.info("Retrying...")
+        logger.info("Connected.")
 
         metadata = MetaData()
         self.table = Table('sql_storage', metadata,

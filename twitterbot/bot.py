@@ -171,7 +171,7 @@ class TwitterBot:
         self.state['followers'].append(f_id)
 
 
-    def post_tweet(self, text, reply_to=None, media=None):
+    def post_tweet(self, text, reply_to=None, media=None, file=None):
         kwargs = {}
         args = [text]
         if media is not None:
@@ -179,6 +179,9 @@ class TwitterBot:
             args.insert(0, media)
         else:
             cmd = self.api.update_status
+
+        if file is not None:
+            kwargs['file'] = file
 
         try:
             self.log('Tweeting "{}"'.format(text))

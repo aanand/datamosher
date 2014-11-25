@@ -1,15 +1,16 @@
 db:
-  image: orchardup/postgresql
+  image: postgres
 
 bot:
   build: .
   links:
-    - "db:db"
+    - db
   volumes:
     - .:/code
   environment:
-    DATABASE_URL: "postgres://docker:docker@db:5432/docker"
+    DATABASE_URL: "postgres://postgres@db:5432/postgres"
     TWITTER_CONSUMER_KEY:
     TWITTER_CONSUMER_SECRET:
     TWITTER_ACCESS_TOKEN:
     TWITTER_ACCESS_TOKEN_SECRET:
+    SILENT_MODE:

@@ -3,8 +3,7 @@
 
 from twitterbot import TwitterBot
 
-from anthrobot import config, actions, characteristics
-
+from extensions.wordpad import wordpad
 from extensions.sql_storage import SQLStorage
 
 import arrow
@@ -12,14 +11,10 @@ import arrow
 import random
 import os
 import logging
-import re
+import urllib
 
 
-class Butt(config.Config):
-    nouns = ["butt", "ass", "bum", "arse"]
-
-
-class YourButt(TwitterBot):
+class WordPadBot(TwitterBot):
     def bot_init(self):
         self.config['storage'] = SQLStorage(os.environ['DATABASE_URL'])
 
@@ -36,7 +31,7 @@ class YourButt(TwitterBot):
         self.config['reply_direct_mention_only'] = False
 
         # only include bot followers (and original tweeter) in @-replies
-        self.config['reply_followers_only'] = True
+        self.config['reply_followers_only'] = False
 
         # fav any tweets that mention this bot?
         self.config['autofav_mentions'] = False
@@ -45,7 +40,7 @@ class YourButt(TwitterBot):
         self.config['autofav_keywords'] = []
 
         # follow back all followers?
-        self.config['autofollow'] = False
+        self.config['autofollow'] = True
 
         # ignore home timeline tweets which mention other accounts?
         self.config['ignore_timeline_mentions'] = False
@@ -56,11 +51,8 @@ class YourButt(TwitterBot):
         # length of the moving window, in seconds
         self.config['recent_replies_window'] = 20*60
 
-        # regex to check if we should reply to a timeline tweet
-        self.config['timeline_pattern'] = r'\bbutts?\b'
-
         # probability of replying to a matching timeline tweet
-        self.config['timeline_reply_probability'] = 1.0
+        self.config['timeline_reply_probability'] = 0.2
 
         # probability of tweeting an action, rather than a characteristic
         self.config['action_probability'] = 0.8
@@ -68,22 +60,28 @@ class YourButt(TwitterBot):
         self.config['silent_mode'] = (int(os.environ.get('SILENT_MODE', '1')) != 0)
 
     def on_scheduled_tweet(self):
-        text = self.generate_tweet(max_len=140)
-
-        if self._is_silent():
-            self.log("Silent mode is on. Would've tweeted: {}".format(text))
-            return
-
-        self.post_tweet(text)
+        pass
 
     def on_mention(self, tweet, prefix):
+        if self._is_silent():
+            self.log("Silent mode is on. Not responding to {}".format(self._tweet_url(tweet)))
+            return
+
+        if not has_image(tweet):
+            self.post_tweet('%s I need an image!' % prefix, reply_to=tweet)
+            return
+
         if not self.check_reply_threshold(tweet, prefix):
             return
 
         self.reply_to_tweet(tweet, prefix)
 
     def on_timeline(self, tweet, prefix):
-        if not re.search(self.config['timeline_pattern'], tweet.text, flags=re.IGNORECASE):
+        if not has_image(tweet):
+            return
+
+        if self._is_silent():
+            self.log("Silent mode is on. Not responding to {}".format(self._tweet_url(tweet)))
             return
 
         if not self.check_reply_threshold(tweet, prefix):
@@ -96,14 +94,8 @@ class YourButt(TwitterBot):
         self.reply_to_tweet(tweet, prefix)
 
     def reply_to_tweet(self, tweet, prefix):
-        prefix = prefix + ' '
-        text = prefix + self.generate_tweet(max_len=140-len(prefix))
-
-        if self._is_silent():
-            self.log("Silent mode is on. Would've responded to {} with: {}".format(self._tweet_url(tweet), text))
-        else:
-            self.post_tweet(text, reply_to=tweet)
-
+        blob = generate_image(get_image_blob(tweet))
+        self.post_tweet(prefix, reply_to=tweet, media='not-actually-a-file.jpeg', file=blob)
         self.update_reply_threshold(tweet, prefix)
 
     def _is_silent(self):
@@ -151,29 +143,33 @@ class YourButt(TwitterBot):
             self.state['recent_replies'] = []
         return self.state['recent_replies']
 
-    def generate_tweet(self, max_len):
-        cfg = Butt()
-        candidates = self.generate_candidates(cfg)
-        candidates = [c for c in candidates if len(c) <= max_len]
 
-        if len(candidates) == 0:
-            raise Exception("No suitable candidates were found")
+def generate_image(original):
+    return wordpad(original, max_size=(1024, 1024))
 
-        return random.choice(candidates)
 
-    def generate_candidates(self, cfg):
-        if random.random() < self.config['action_probability']:
-            tweets = self.search(cfg.action_seeds())
-            generated_actions = actions.generate(cfg, [t.text for t in tweets])
-            return ['*%s*' % a for a in generated_actions]
-        else:
-            tweets = self.search(cfg.characteristic_seeds())
-            generated_characteristics = characteristics.generate(cfg, [t.text for t in tweets])
-            return ['Im %s' % a for a in generated_characteristics]
+def has_image(tweet):
+    try:
+        next(get_images(tweet))
+        return True
+    except StopIteration:
+        return False
 
-    def search(self, seeds):
-        query = ' OR '.join('"%s"' % s for s in seeds)
-        return self.api.search(query, count=100, result_type='recent')
+
+def get_image_blob(tweet):
+    url = next(get_images(tweet))
+    return urllib.urlopen(url).read()
+
+
+# https://github.com/bobpoekert/spatchwork/blob/master/twitter.py
+def get_images(tweet):
+    for media in tweet._json.get('entities', []).get('media', []):
+        if not media:
+            continue
+        for obj in media:
+            if media.get('type') == 'photo':
+                yield media['media_url']
+
 
 if __name__ == '__main__':
     stderr = logging.StreamHandler()
@@ -184,5 +180,5 @@ if __name__ == '__main__':
     root_logger.setLevel(logging.DEBUG)
     root_logger.addHandler(stderr)
 
-    bot = YourButt()
+    bot = WordPadBot()
     bot.run()
