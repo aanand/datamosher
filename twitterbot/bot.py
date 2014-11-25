@@ -272,6 +272,9 @@ class TwitterBot:
         try:
             current_mentions = self.api.mentions_timeline(since_id=self.state['last_mention_id'], count=100)
 
+            # if i've somehow managed to mention myself, ignore it
+            current_mentions = [t for t in current_mentions if t.author.id != self.id]
+
             # direct mentions only?
             if self.config['reply_direct_mention_only']:
                 current_mentions = [t for t in current_mentions if re.split('[^@\w]', t.text)[0] == '@' + self.screen_name]
