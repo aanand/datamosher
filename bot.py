@@ -94,7 +94,7 @@ class WordPadBot(TwitterBot):
         self.reply_to_tweet(tweet, prefix)
 
     def reply_to_tweet(self, tweet, prefix):
-        blob = generate_image(get_image_blob(tweet))
+        blob = self.generate_image(get_image_blob(tweet))
         self.post_tweet(
             prefix,
             reply_to=tweet,
@@ -149,12 +149,12 @@ class WordPadBot(TwitterBot):
         return self.state['recent_replies']
 
 
-def generate_image(original):
-    return wordpad(
-        original,
-        max_size=(1024, 1024),
-        rotate=(random.random() <= self.config['rotate_probability']),
-    )
+    def generate_image(self, original):
+        return wordpad(
+            original,
+            max_size=(1024, 1024),
+            rotate=(random.random() <= self.config['rotate_probability']),
+        )
 
 
 def has_image(tweet):
