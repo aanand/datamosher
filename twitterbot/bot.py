@@ -311,7 +311,9 @@ class TwitterBot:
 
             if self.config['ignore_timeline_mentions']:
                 # remove all tweets with mentions (heuristically)
+                old_len = len(current_timeline)
                 current_timeline = [t for t in current_timeline if '@' not in t.text]
+                self.log("Ignoring {} mentions in timeline".format(old_len - len(current_timeline)))
 
             if len(current_timeline) != 0:
                 self.state['last_timeline_id'] = current_timeline[0].id
