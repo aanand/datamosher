@@ -46,6 +46,9 @@ class WordPadBot(TwitterBot):
         # ignore home timeline tweets which mention other accounts?
         self.config['ignore_timeline_mentions'] = False
 
+        # ignore retweets in the home timeline
+        self.config['ignore_timeline_retweets'] = True
+
         # max number of times to reply to someone within the moving window
         self.config['reply_threshold'] = 3
 
