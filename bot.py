@@ -71,7 +71,6 @@ class WordPadBot(TwitterBot):
             return
 
         if not has_image(tweet):
-            self.post_tweet('%s I need an image!' % prefix, reply_to=tweet)
             return
 
         if not self.check_reply_threshold(tweet, prefix):
