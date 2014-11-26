@@ -315,6 +315,11 @@ class TwitterBot:
                 current_timeline = [t for t in current_timeline if '@' not in t.text]
                 self.log("Ignoring {} mentions in timeline".format(old_len - len(current_timeline)))
 
+            if self.config['ignore_timeline_retweets']:
+                old_len = len(current_timeline)
+                current_timeline = [t for t in current_timeline if not self._is_retweet(t)]
+                self.log("Ignoring {} retweets in timeline".format(old_len - len(current_timeline)))
+
             if len(current_timeline) != 0:
                 self.state['last_timeline_id'] = current_timeline[0].id
             
@@ -327,6 +332,8 @@ class TwitterBot:
         except tweepy.TweepError as e:
             self._log_tweepy_error('Can\'t retrieve timeline', e)
 
+    def _is_retweet(self, tweet):
+        return hasattr(tweet, 'retweeted_status') and tweet.retweeted_status is not None
 
     def _check_followers(self):
         """
