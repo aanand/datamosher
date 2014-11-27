@@ -56,7 +56,7 @@ class WordPadBot(TwitterBot):
         self.config['recent_replies_window'] = 20*60
 
         # probability of replying to a matching timeline tweet
-        self.config['timeline_reply_probability'] = 0.2
+        self.config['timeline_reply_probability'] = float(os.environ.get('TIMELINE_REPLY_PROBABILITY') or '0.05')
 
         self.config['rotate_probability'] = float(os.environ.get('ROTATE_PROBABILITY') or '0.5')
 
