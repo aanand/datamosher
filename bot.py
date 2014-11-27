@@ -23,9 +23,9 @@ SALUTATIONS = [
     'Thank you!',
     'Fixed it!',
     'Oh no!',
-    'Let\xe2\x80\x99s rock!',
-    '(\xc2\xb4\xe2\x97\xa0\xcf\x89\xe2\x97\xa0`)',
-    '(\xe2\x97\x95\xe2\x80\xbf\xe2\x97\x95\xe2\x9c\xbf)',
+    'Let\u2019s rock!',
+    '(\u25d5\u203f\u25d5\u273f)',
+    '\u30fd(*\u30fb\u03c9\u30fb)\uff89',
 ]
 
 
