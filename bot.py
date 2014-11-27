@@ -1,6 +1,8 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*- #
 
+from __future__ import unicode_literals
+
 from twitterbot import TwitterBot
 
 from extensions.wordpad import wordpad
