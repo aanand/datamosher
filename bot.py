@@ -15,6 +15,18 @@ import urllib
 from io import BytesIO
 
 
+SALUTATIONS = [
+    'Hello!',
+    'Sorry!',
+    'Thank you!',
+    'Fixed it!',
+    'Oh no!',
+    'Let\xe2\x80\x99s rock!',
+    '(\xc2\xb4\xe2\x97\xa0\xcf\x89\xe2\x97\xa0`)',
+    '(\xe2\x97\x95\xe2\x80\xbf\xe2\x97\x95\xe2\x9c\xbf)',
+]
+
+
 class WordPadBot(TwitterBot):
     def bot_init(self):
         self.config['storage'] = SQLStorage(os.environ['DATABASE_URL'])
@@ -97,8 +109,9 @@ class WordPadBot(TwitterBot):
 
     def reply_to_tweet(self, tweet, prefix):
         blob = self.generate_image(get_image_blob(tweet))
+        text = '{} {}'.format(prefix, random.choice(SALUTATIONS))
         self.post_tweet(
-            prefix,
+            text,
             reply_to=tweet,
             media='not-actually-a-file.jpeg',
             file=BytesIO(blob),
