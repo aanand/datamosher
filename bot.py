@@ -19,10 +19,16 @@ from io import BytesIO
 
 SALUTATIONS = [
     'Hello!',
-    'Sorry!',
+    'Hello {author.name}!',
     'Thank you!',
+    'Thank you, {author.name}!',
     'Fixed it!',
     'Oh no!',
+    'WordPad! WordPad.',
+    'Is this OK?',
+    'Is this OK, {author.name}?',
+    'Check it out!',
+    'Hahahaha! Haha.',
     'Let\u2019s rock!',
     '(\u25d5\u203f\u25d5\u273f)',
     '\u30fd(*\u30fb\u03c9\u30fb)\uff89',
@@ -111,7 +117,11 @@ class WordPadBot(TwitterBot):
 
     def reply_to_tweet(self, tweet, prefix):
         blob = self.generate_image(get_image_blob(tweet))
-        text = '{} {}'.format(prefix, random.choice(SALUTATIONS))
+
+        prefix += ' '
+        salutation = self.generate_salutation(tweet, 140-len(prefix))
+        text = '{}{}'.format(prefix, salutation)
+
         self.post_tweet(
             text,
             reply_to=tweet,
@@ -119,6 +129,15 @@ class WordPadBot(TwitterBot):
             file=BytesIO(blob),
         )
         self.update_reply_threshold(tweet, prefix)
+
+    def generate_salutation(self, tweet, max_len=140):
+        choices = [s.format(**tweet.__dict__) for s in SALUTATIONS]
+        choices = [s for s in choices if len(s) <= max_len]
+
+        if len(choices) == 0:
+            return ''
+        else:
+            return random.choice(choices)
 
     def _is_silent(self):
         return self.config['silent_mode']
