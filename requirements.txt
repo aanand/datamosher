@@ -1,6 +1,7 @@
-Pattern==2.6
 tweepy==2.3.0
 sqlalchemy==0.9.7
 psycopg2==2.4.5
 arrow==0.4.2
-Pillow==2.6.1
+ipython==2.3.1
+beautifulsoup4==4.3.2
+pymosh
