@@ -5,7 +5,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def drift(in_filename, out_filename, drift_point=0.3):
+def drift(in_filename, out_filename, drift_point=0.5):
     f = Index(in_filename)
 
     for stream in f.video:
