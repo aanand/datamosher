@@ -55,7 +55,7 @@ class Processor:
                 raise Exception("Can't make a file small enough (%d frames, step = %s)"
                     % (len(all_frames), step))
 
-            cmd = ['convert', '-loop', '0', '-delay', '8']
+            cmd = ['convert', '-loop', '0', '-delay', str(step*4), '-layers', 'Optimize']
             cmd += frames
             cmd.append(gif_filename)
             check_call(cmd)
