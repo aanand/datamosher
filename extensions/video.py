@@ -70,7 +70,7 @@ class Processor:
     def extract_frames(self, filename):
         frames_dir = tempfile.mkdtemp(dir=self.tmp_dir)
         check_call([self.ffmpeg_binary, '-y', '-i', filename, os.path.join(frames_dir, '%04d.png')])
-        return [os.path.join(frames_dir, f) for f in os.listdir(frames_dir)]
+        return sorted([os.path.join(frames_dir, f) for f in os.listdir(frames_dir)])
 
 
 def check_call(cmd, *args, **kwargs):
