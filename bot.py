@@ -68,26 +68,12 @@ class DataMosher(TwitterBot):
         pass
 
     def on_mention(self, tweet, prefix):
-        if self._is_silent():
-            self.log("Silent mode is on. Not responding to {}".format(self._tweet_url(tweet)))
-            return
-
-        if not probably_has_gif(tweet):
-            return
-
         if not self.check_reply_threshold(tweet, prefix):
             return
 
         self.reply_to_tweet(tweet, prefix)
 
     def on_timeline(self, tweet, prefix):
-        if not probably_has_gif(tweet):
-            return
-
-        if self._is_silent():
-            self.log("Silent mode is on. Not responding to {}".format(self._tweet_url(tweet)))
-            return
-
         if not self.check_reply_threshold(tweet, prefix):
             return
 
@@ -98,12 +84,17 @@ class DataMosher(TwitterBot):
         self.reply_to_tweet(tweet, prefix)
 
     def reply_to_tweet(self, tweet, prefix):
-        video_url = get_gif_video_url(tweet)
+        video_url = self.get_gif_video_url(tweet)
         if video_url is None:
             self.log("Couldn't find a gif video URL for {}".format(self._tweet_url(tweet)))
             return
 
-        filename = generate_gif(video_url)
+        filename = self.generate_gif(video_url)
+
+        if self._is_silent():
+            self.log("Silent mode is on. Would've responded to {} with {}".format(
+                self._tweet_url(tweet), filename))
+            return
 
         self.post_tweet(
             prefix,
@@ -157,47 +148,59 @@ class DataMosher(TwitterBot):
             self.state['recent_replies'] = []
         return self.state['recent_replies']
 
+    def generate_gif(self, video_url):
+        return Processor().mosh_url(video_url)
 
-def generate_gif(video_url):
-    return Processor().mosh_url(video_url)
+    def get_gif_video_url(self, tweet):
+        url = self.get_gif_page_urls_climbing(tweet)
+        if url is None:
+            return None
 
+        html = urllib.urlopen(url).read()
+        soup = BeautifulSoup(html)
 
-def probably_has_gif(tweet):
-    return get_gif_page_url(tweet) is not None
+        video = soup.find('video')
+        if video is None:
+            return None
 
+        source = video.find('source')
+        if source is None:
+            return None
 
-def get_gif_video_url(tweet):
-    url = get_gif_page_url(tweet)
-    if url is None:
+        return source['video-src']
+
+    def get_gif_page_urls_climbing(self, tweet):
+        while True:
+            url = self.get_gif_page_url(tweet)
+
+            if url:
+                return url
+
+            if tweet.in_reply_to_status_id is None:
+                break
+
+            tweet = self.api.get_status(tweet.in_reply_to_status_id)
+
+            # don't glitch yourself mate
+            if tweet.author.id == self.id:
+                self.log("Found my own tweet ({}) - stopping".format(self._tweet_url(tweet)))
+                break
+
+            self.log("Climbing up to status {}".format(self._tweet_url(tweet)))
+
+    # we're looking for tweets with no media but with a twitter.com/.../photo link
+    def get_gif_page_url(self, tweet):
+        url_pattern = r'^https?://twitter\.com/\w+/status/\d+/photo/1$'
+
+        media = tweet.entities.get('media', [])
+        if len(media) > 0:
+            return None
+
+        for url in tweet.entities.get('urls', []):
+            if re.match(url_pattern, url['expanded_url']):
+                return url['expanded_url']
+
         return None
-
-    html = urllib.urlopen(url).read()
-    soup = BeautifulSoup(html)
-
-    video = soup.find('video')
-    if video is None:
-        return None
-
-    source = video.find('source')
-    if source is None:
-        return None
-
-    return source['video-src']
-
-
-# we're looking for tweets with no media but with a twitter.com/.../photo link
-def get_gif_page_url(tweet):
-    url_pattern = r'^https?://twitter\.com/\w+/status/\d+/photo/1$'
-
-    media = tweet.entities.get('media', [])
-    if len(media) > 0:
-        return None
-
-    for url in tweet.entities.get('urls', []):
-        if re.match(url_pattern, url['expanded_url']):
-            return url['expanded_url']
-
-    return None
 
 
 def start_logging():
