@@ -17,10 +17,9 @@ def drift(in_filename, out_filename, drift_point=0.5):
 
 
 def drift_stream(stream, drift_point):
-    idx = 0
     repeated_frame = None
 
-    for frame in stream:
+    for idx, frame in enumerate(stream):
         if idx < drift_point:
             yield frame
         elif is_iframe(frame):
@@ -29,5 +28,3 @@ def drift_stream(stream, drift_point):
             if repeated_frame is None:
                 repeated_frame = frame
             yield repeated_frame
-
-        idx += 1
