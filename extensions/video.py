@@ -33,7 +33,7 @@ class Processor:
         avi_filename = self.to_avi(filename)
         _, moshed_filename = tempfile.mkstemp('.mosh.avi', dir=self.tmp_dir)
         log.info("Moshing %s", avi_filename)
-        datamosh.drift(avi_filename, moshed_filename)
+        datamosh.echo(avi_filename, moshed_filename)
         return self.make_gif(moshed_filename)
 
     def to_avi(self, filename):
