@@ -190,16 +190,19 @@ class DataMosher(TwitterBot):
 
     # we're looking for tweets with no media but with a twitter.com/.../photo link
     def get_gif_page_url(self, tweet):
+        self.log("Getting GIF page URL for {}".format(self._tweet_url(tweet)))
         url_pattern = r'^https?://twitter\.com/\w+/status/\d+/photo/1$'
 
         media = tweet.entities.get('media', [])
         if len(media) > 0:
+            self.log("Tweet has no media entities - giving up")
             return None
 
         for url in tweet.entities.get('urls', []):
             if re.match(url_pattern, url['expanded_url']):
                 return url['expanded_url']
 
+        self.log("Tweet has no link with a matching URL - giving up")
         return None
 
 
