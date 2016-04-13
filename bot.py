@@ -19,6 +19,9 @@ import re
 from io import BytesIO
 
 
+URL_PATTERN = re.compile(r'^https?://twitter\.com/(\w+)/status/(\d+)/photo/1$')
+
+
 class DataMosher(TwitterBot):
     def bot_init(self):
         self.config['storage'] = SQLStorage(os.environ['DATABASE_URL'])
@@ -156,18 +159,23 @@ class DataMosher(TwitterBot):
         if url is None:
             return None
 
+        tweet_id = URL_PATTERN.match(url).group(2)
+
+        self.log("Opening {}".format(url))
         html = urllib.urlopen(url).read()
         soup = BeautifulSoup(html)
 
-        video = soup.find('video')
-        if video is None:
+        tag = soup.find('div', attrs={"data-tweet-id": tweet_id})
+        if not tag:
+            self.log("Couldn't find a div with data-tweet-id={} - giving up".format(repr(tweet_id)))
             return None
 
-        source = video.find('source')
-        if source is None:
+        match = re.search(r'https?://pbs\.twimg\.com/tweet_video_thumb/(.+)\.\w+', unicode(tag))
+        if not match:
+            self.log("Couldn't find a thumbnail URL - giving up")
             return None
 
-        return source['video-src']
+        return "https://pbs.twimg.com/tweet_video/{}.mp4".format(match.group(1))
 
     def get_gif_page_urls_climbing(self, tweet):
         while True:
@@ -188,21 +196,16 @@ class DataMosher(TwitterBot):
 
             self.log("Climbing up to status {}".format(self._tweet_url(tweet)))
 
-    # we're looking for tweets with no media but with a twitter.com/.../photo link
+    # We're looking for a media entity with a "http://twitter.com/.../photo/1" URL
     def get_gif_page_url(self, tweet):
         self.log("Getting GIF page URL for {}".format(self._tweet_url(tweet)))
-        url_pattern = r'^https?://twitter\.com/\w+/status/\d+/photo/1$'
 
-        media = tweet.entities.get('media', [])
-        if len(media) > 0:
-            self.log("Tweet has no media entities - giving up")
-            return None
+        for media in tweet.entities.get('media', []):
+            if URL_PATTERN.match(media['expanded_url']):
+                self.log("Found link: {}".format(media['expanded_url']))
+                return media['expanded_url']
 
-        for url in tweet.entities.get('urls', []):
-            if re.match(url_pattern, url['expanded_url']):
-                return url['expanded_url']
-
-        self.log("Tweet has no link with a matching URL - giving up")
+        self.log("Tweet has no media entity with a matching URL - giving up")
         return None
 
 
