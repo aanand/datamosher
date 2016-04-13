@@ -74,7 +74,11 @@ class DataMosher(TwitterBot):
         if not self.check_reply_threshold(tweet, prefix):
             return
 
-        self.reply_to_tweet(tweet, prefix)
+        try:
+            self.reply_to_tweet(tweet, prefix)
+        except Exception as e:
+            self.log(str(e))
+            return
 
     def on_timeline(self, tweet, prefix):
         if not self.check_reply_threshold(tweet, prefix):
@@ -84,7 +88,11 @@ class DataMosher(TwitterBot):
             self.log("Failed dice roll. Not responding to {}".format(self._tweet_url(tweet)))
             return
 
-        self.reply_to_tweet(tweet, prefix)
+        try:
+            self.reply_to_tweet(tweet, prefix)
+        except Exception as e:
+            self.log(str(e))
+            return
 
     def reply_to_tweet(self, tweet, prefix):
         video_url = self.get_gif_video_url(tweet)
