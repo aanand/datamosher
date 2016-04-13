@@ -18,7 +18,7 @@ class Processor:
         if not os.path.exists(tmp_dir):
             os.mkdir(tmp_dir)
 
-    def mosh_url(self, video_url):
+    def mosh_url(self, video_url, mosh_type=None):
         """
         Takes a video URL and returns a path to a .gif file
         containing a moshed version of the video.
@@ -27,13 +27,13 @@ class Processor:
         video_file = tempfile.NamedTemporaryFile(dir=self.tmp_dir, delete=False)
         video_file.write(urllib.urlopen(video_url).read())
         video_file.close()
-        return self.mosh_file(video_file.name)
+        return self.mosh_file(video_file.name, mosh_type=mosh_type)
 
-    def mosh_file(self, filename):
+    def mosh_file(self, filename, mosh_type=None):
         avi_filename = self.to_avi(filename)
         _, moshed_filename = tempfile.mkstemp('.mosh.avi', dir=self.tmp_dir)
         log.info("Moshing %s", avi_filename)
-        datamosh.echo(avi_filename, moshed_filename)
+        datamosh.mosh(avi_filename, moshed_filename, mosh_type)
         return self.make_gif(moshed_filename)
 
     def to_avi(self, filename):

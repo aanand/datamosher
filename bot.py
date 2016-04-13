@@ -6,6 +6,7 @@ from __future__ import unicode_literals
 from twitterbot import TwitterBot
 
 from extensions.video import Processor
+from extensions.datamosh import MOSH_TYPES
 from extensions.sql_storage import SQLStorage
 
 import arrow
@@ -100,15 +101,25 @@ class DataMosher(TwitterBot):
             self.log("Couldn't find a gif video URL for {}".format(self._tweet_url(tweet)))
             return
 
-        filename = self.generate_gif(video_url)
+        mosh_type = None
+        for mt in MOSH_TYPES:
+            if '#{}'.format(mt) in tweet.text.split():
+                mosh_type = mt
+                break
+
+        if not mosh_type:
+            mosh_type = random.choice(MOSH_TYPES)
+
+        text = '{} #{}'.format(prefix, mosh_type)
+        filename = self.generate_gif(video_url, mosh_type=mosh_type)
 
         if self._is_silent():
-            self.log("Silent mode is on. Would've responded to {} with {}".format(
-                self._tweet_url(tweet), filename))
+            self.log("Silent mode is on. Would've responded to {} with '{} {}'".format(
+                self._tweet_url(tweet), text, filename))
             return
 
         self.post_tweet(
-            prefix,
+            text,
             reply_to=tweet,
             media=filename,
         )
@@ -159,8 +170,8 @@ class DataMosher(TwitterBot):
             self.state['recent_replies'] = []
         return self.state['recent_replies']
 
-    def generate_gif(self, video_url):
-        return Processor().mosh_url(video_url)
+    def generate_gif(self, video_url, mosh_type=None):
+        return Processor().mosh_url(video_url, mosh_type=mosh_type)
 
     def get_gif_video_url(self, tweet):
         url = self.get_gif_page_urls_climbing(tweet)
