@@ -121,7 +121,7 @@ class TwitterBot:
             code = e.message[0]['code']
             self.log("{}: {} ({})".format(message, e_message, code), level=logging.ERROR)
         except:
-            self.log(message, e)
+            self.log("{}: {}".format(message, e), level=logging.ERROR)
 
 
     def _tweet_url(self, tweet):
@@ -252,7 +252,7 @@ class TwitterBot:
         Returns a string of users to @-mention when responding to a tweet.
         """
         mention_back = ['@' + tweet.author.screen_name]
-        mention_back += [s for s in re.split('[^@\w]', tweet.text) if len(s) > 2 and s[0] == '@' and s[1:] != self.screen_name]
+        mention_back += [s for s in re.split('[^@\w]', tweet.text) if len(s) > 2 and s[0] == '@' and s[1:].lower() != self.screen_name.lower()]
 
         if self.config['reply_followers_only']:
             mention_back = [s for s in mention_back if s[1:] in self.state['followers'] or s == '@' + tweet.author.screen_name]
@@ -270,6 +270,9 @@ class TwitterBot:
 
         try:
             current_mentions = self.api.mentions_timeline(since_id=self.state['last_mention_id'], count=100)
+
+            # if i've somehow managed to mention myself, ignore it
+            current_mentions = [t for t in current_mentions if t.author.id != self.id]
 
             # direct mentions only?
             if self.config['reply_direct_mention_only']:
