@@ -17,6 +17,8 @@ import re
 import random
 import cPickle as pickle
 
+from httplib import IncompleteRead
+
 
 def ignore(method):
     """
@@ -91,10 +93,10 @@ class TwitterBot:
             self.state['recent_timeline'] = []
             self.state['mention_queue'] = []
 
-            self.state['friends'] = self.api.friends_ids(self.id)
-            self.state['followers'] = self.api.followers_ids(self.id)
-            self.state['new_followers'] = []
-            self.state['last_follow_check'] = 0
+        self.state['friends'] = self.api.friends_ids(self.id)
+        self.state['followers'] = self.api.followers_ids(self.id)
+        self.state['new_followers'] = []
+        self.state['last_follow_check'] = 0
 
         logging.info('Bot initialized!')
 
@@ -118,8 +120,8 @@ class TwitterBot:
             e_message = e.message[0]['message']
             code = e.message[0]['code']
             self.log("{}: {} ({})".format(message, e_message, code), level=logging.ERROR)
-        except TypeError:
-            self.log("{} {}".format(message, e), level=logging.ERROR)
+        except:
+            self.log(message, e)
 
 
     def _tweet_url(self, tweet):
@@ -174,18 +176,14 @@ class TwitterBot:
         self.state['followers'].append(f_id)
 
 
-    def post_tweet(self, text, reply_to=None, media=None, file=None):
+    def post_tweet(self, text, reply_to=None, media=None):
         kwargs = {}
         args = [text]
         if media is not None:
             cmd = self.api.update_with_media
-            # filename has to be a byte string or tweepy vomits
-            args.insert(0, str(media))
+            args.insert(0, media)
         else:
             cmd = self.api.update_status
-
-        if file is not None:
-            kwargs['file'] = file
 
         try:
             self.log('Tweeting "{}"'.format(text))
@@ -254,7 +252,7 @@ class TwitterBot:
         Returns a string of users to @-mention when responding to a tweet.
         """
         mention_back = ['@' + tweet.author.screen_name]
-        mention_back += [s for s in re.split('[^@\w]', tweet.text) if len(s) > 2 and s[0] == '@' and s[1:].lower() != self.screen_name.lower()]
+        mention_back += [s for s in re.split('[^@\w]', tweet.text) if len(s) > 2 and s[0] == '@' and s[1:] != self.screen_name]
 
         if self.config['reply_followers_only']:
             mention_back = [s for s in mention_back if s[1:] in self.state['followers'] or s == '@' + tweet.author.screen_name]
@@ -273,9 +271,6 @@ class TwitterBot:
         try:
             current_mentions = self.api.mentions_timeline(since_id=self.state['last_mention_id'], count=100)
 
-            # if i've somehow managed to mention myself, ignore it
-            current_mentions = [t for t in current_mentions if t.author.id != self.id]
-
             # direct mentions only?
             if self.config['reply_direct_mention_only']:
                 current_mentions = [t for t in current_mentions if re.split('[^@\w]', t.text)[0] == '@' + self.screen_name]
@@ -291,6 +286,9 @@ class TwitterBot:
 
         except tweepy.TweepError as e:
             self._log_tweepy_error('Can\'t retrieve mentions', e)
+
+        except IncompleteRead as e:
+            self.log('Incomplete read error -- skipping mentions update')
 
 
     def _check_timeline(self):
@@ -312,14 +310,7 @@ class TwitterBot:
 
             if self.config['ignore_timeline_mentions']:
                 # remove all tweets with mentions (heuristically)
-                old_len = len(current_timeline)
                 current_timeline = [t for t in current_timeline if '@' not in t.text]
-                self.log("Ignoring {} mentions in timeline".format(old_len - len(current_timeline)))
-
-            if self.config['ignore_timeline_retweets']:
-                old_len = len(current_timeline)
-                current_timeline = [t for t in current_timeline if not self._is_retweet(t)]
-                self.log("Ignoring {} retweets in timeline".format(old_len - len(current_timeline)))
 
             if len(current_timeline) != 0:
                 self.state['last_timeline_id'] = current_timeline[0].id
@@ -333,8 +324,9 @@ class TwitterBot:
         except tweepy.TweepError as e:
             self._log_tweepy_error('Can\'t retrieve timeline', e)
 
-    def _is_retweet(self, tweet):
-        return hasattr(tweet, 'retweeted_status') and tweet.retweeted_status is not None
+        except IncompleteRead as e:
+            self.log('Incomplete read error -- skipping timeline update')
+
 
     def _check_followers(self):
         """
@@ -345,10 +337,13 @@ class TwitterBot:
         try:
             self.state['new_followers'] = [f_id for f_id in self.api.followers_ids(self.id) if f_id not in self.state['followers']]
 
-            self.config['last_follow_check'] = time.time()
+            self.state['last_follow_check'] = time.time()
 
         except tweepy.TweepError as e:
             self._log_tweepy_error('Can\'t update followers', e)
+
+        except IncompleteRead as e:
+            self.log('Incomplete read error -- skipping followers update')
 
             
     def _handle_followers(self):
