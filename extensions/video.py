@@ -51,7 +51,7 @@ class Processor:
     def make_gif(self, filename, frame_rate):
         _, gif_filename = tempfile.mkstemp('.gif', dir=self.tmp_dir)
 
-        all_frames = self.extract_frames(filename)
+        all_frames = self.extract_frames(filename, frame_rate)
         step = 1
 
         max_size = 3 * 1024 * 1024
@@ -81,9 +81,15 @@ class Processor:
 
         return gif_filename
 
-    def extract_frames(self, filename):
+    def extract_frames(self, filename, frame_rate):
         frames_dir = tempfile.mkdtemp(dir=self.tmp_dir)
-        check_call([self.ffmpeg_binary, '-y', '-i', filename, os.path.join(frames_dir, '%04d.png')])
+        check_call([
+            self.ffmpeg_binary,
+            '-y',
+            '-i', filename,
+            '-r', str(frame_rate),
+            os.path.join(frames_dir, '%04d.png'),
+        ])
         return sorted([os.path.join(frames_dir, f) for f in os.listdir(frames_dir)])
 
     # Adapted from http://askubuntu.com/a/723362
