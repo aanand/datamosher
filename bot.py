@@ -8,6 +8,7 @@ from twitterbot import TwitterBot
 from extensions.video import Processor
 from extensions.datamosh import MOSH_TYPES
 from extensions.sql_storage import SQLStorage
+from extensions.text import random_code
 
 import arrow
 from bs4 import BeautifulSoup
@@ -110,7 +111,7 @@ class DataMosher(TwitterBot):
         if not mosh_type:
             mosh_type = random.choice(MOSH_TYPES)
 
-        text = '{} #{}'.format(prefix, mosh_type)
+        text = '{} {} #{}'.format(prefix, random_code(25, 50), mosh_type)
         filename = self.generate_gif(video_url, mosh_type=mosh_type)
 
         if self._is_silent():
