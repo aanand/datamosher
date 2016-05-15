@@ -1,16 +1,19 @@
 from pymosh import Index
 from pymosh.mpeg4 import is_iframe
 
+from itertools import islice
+
 import logging
 log = logging.getLogger(__name__)
 
-MOSH_TYPES = ['drift', 'echo']
+MOSH_TYPES = ['drift', 'echo', 'magnify']
 
 
 def mosh(in_filename, out_filename, mosh_type=None):
     func_map = {
         'drift': drift_stream,
         'echo': echo_stream,
+        'magnify': magnify_stream,
     }
 
     mosh_type = mosh_type or 'drift'
@@ -54,3 +57,17 @@ def echo_stream(stream, midpoint=0.5):
         frames += pframes[:(len(all_frames) - len(frames))]
 
     return frames
+
+
+def magnify_stream(stream):
+    def magnify_iter(stream):
+        all_frames = iter(stream)
+        yield next(all_frames)
+
+        while True:
+            frame = next(all_frames)
+            if not is_iframe(frame):
+                yield frame
+                yield frame
+
+    return islice(magnify_iter(stream), len(stream))
