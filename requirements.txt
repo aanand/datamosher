@@ -1,3 +1,4 @@
+git+git://github.com/aanand/twitterbot.git@95daa6c0287e087ee711380abc259ad32b1701c0
 tweepy==2.3.0
 sqlalchemy==0.9.7
 psycopg2==2.4.5
