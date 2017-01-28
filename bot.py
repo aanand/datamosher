@@ -52,6 +52,9 @@ class DataMosher(TwitterBot):
         # follow back all followers?
         self.config['autofollow'] = True
 
+        # never follow back someone who's following more than this many people - they're probably spam
+        self.config['autofollow_max_following'] = 2000
+
         # ignore home timeline tweets which mention other accounts?
         self.config['ignore_timeline_mentions'] = False
 
