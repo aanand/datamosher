@@ -1,5 +1,5 @@
 git+git://github.com/aanand/twitterbot.git@95daa6c0287e087ee711380abc259ad32b1701c0
-tweepy==2.3.0
+git+git://github.com/tweepy/tweepy.git@355b496d1ab08d55b0ce5be941927775d61e1f07#egg=tweepy
 sqlalchemy==0.9.7
 psycopg2==2.4.5
 arrow==0.4.2
