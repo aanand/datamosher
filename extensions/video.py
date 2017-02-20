@@ -99,7 +99,7 @@ class Processor:
             "-v", "0",
             "-select_streams", "v",
             "-print_format", "flat",
-            "-show_entries", "stream=r_frame_rate",
+            "-show_entries", "stream=avg_frame_rate",
         ])
         rate = out.split('=')[1].strip()[1:-1].split('/')
         if len(rate)==1:
